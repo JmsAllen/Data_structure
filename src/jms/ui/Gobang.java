@@ -14,7 +14,9 @@ import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import jms.bean.ButtonFactory;
 import jms.bean.Chess;
+import jms.bean.asideButtonAbs.AsideButton;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -328,7 +330,10 @@ public class Gobang extends Stage {
         _win = false;
         isBlack = true;
         chessList = new Chess[lineCount][lineCount];
+        // 重置 pane 中的棋子
         pane.getChildren().removeIf(node -> node instanceof Circle);
+        // 清空 chessQueue 中的棋子
+        chessQueue.clear();
     }
 
     public Button getStartBtn(Pane pane, double b_width, double b_height) {
@@ -337,10 +342,19 @@ public class Gobang extends Stage {
         return startBtn;
     }
 
+    /**
+     * 悔棋
+     *
+     * @param pane
+     * @param b_width
+     * @param b_height
+     * @return
+     */
     public Button getRegretBtn(Pane pane, double b_width, double b_height) {
         Button regretBtn = getBtn(b_width, b_height, margin + b_width + b_height, height - padding, "悔棋");
         regretBtn.setOnAction(event -> {
             if (_win) return;
+
             Node node = pane.getChildren().get(pane.getChildren().size() - 1);
             if (node instanceof Circle) {
                 isBlack = !isBlack;
@@ -356,6 +370,7 @@ public class Gobang extends Stage {
 
     /**
      * 保存棋谱
+     *
      * @param b_width
      * @param b_height
      * @return
@@ -493,11 +508,12 @@ public class Gobang extends Stage {
             setBtn(pane, getCancelButton(pane, btn_width,
                     btn_height, btn_margin, interval));
 
-            // TODO: 2020/12/21
-            for (Chess ch : chessQueue) {
-                Circle circle = ch.getCircle();
-                pane.getChildren().add(circle);
-            }
+
+//            for (Chess ch : chessQueue) {
+//                Circle circle = ch.getCircle();
+//                pane.getChildren().add(circle);
+//            }
+            chessQueue.forEach(ele -> pane.getChildren().add(ele.getCircle()));
         });
         return restoreBtn;
     }
@@ -511,8 +527,10 @@ public class Gobang extends Stage {
      * @param interval
      * @return
      */
+    @SuppressWarnings("all")
     private Button getReduceButton(Pane pane, double btn_width, double btn_height, double interval) {
-        Button cancelBtn = getBtn(btn_width, btn_height, this.width - interval, height / 2.0, "<");
+
+        AsideButton cancelBtn = ButtonFactory.getAsideButton(btn_width, btn_height, this.width - interval, height / 2.0, "<");
         cancelBtn.setOnAction(event -> {
             // 获取 pane 中的最后一个元素
             Node node = pane.getChildren().get(pane.getChildren().size() - 1);
@@ -530,7 +548,9 @@ public class Gobang extends Stage {
     }
 
     public Button getCancelButton(Pane pane, double btn_width, double btn_height, double btn_margin, double interval) {
-        Button cancelBtn = getBtn(btn_width, btn_height, this.width - interval, height / 2.0 + btn_margin, "X");
+
+        AsideButton cancelBtn = ButtonFactory.getAsideButton(btn_width, btn_height, this.width - interval, height / 2.0 + btn_margin, "X");
+
         cancelBtn.setOnAction(event -> {
             // 移除按钮
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -539,17 +559,8 @@ public class Gobang extends Stage {
             alert.setContentText("结束打谱后点击【再来一局】可开始新局");
             Optional<ButtonType> optional = alert.showAndWait();
             if (optional.orElse(null) == ButtonType.OK) {
-                Node btn;
-                int lastIndex = pane.getChildren().size() - 1;
-                int flag = 3;
-                while (true) {
-                    if ((pane.getChildren().get(lastIndex) instanceof Button)) {
-                        btn = pane.getChildren().get(lastIndex);
-                        pane.getChildren().remove(btn);
-                        flag--;
-                    } else if (flag == 0) break;
-                    else lastIndex--;
-                }
+                chessQueue.clear();
+                pane.getChildren().removeIf(ele -> ele instanceof AsideButton);
             } else {
                 event.consume();
                 return;
@@ -572,7 +583,7 @@ public class Gobang extends Stage {
     }
 
     public Button getAddPieceButton(Pane pane, double b_width, double b_height, double margin, double interval) {
-        Button addPiece = getBtn(b_width, b_height, this.width - interval, height / 2.0 - margin, ">");
+        AsideButton addPiece = ButtonFactory.getAsideButton(b_width, b_height, this.width - interval, height / 2.0 - margin, ">");
         restoreCnt = chessQueue.size();
         addPiece.setOnAction(event -> {
             if (restoreCnt < chessQueue.size()) {
@@ -588,6 +599,7 @@ public class Gobang extends Stage {
 
     public Button getExitBtn(double b_width, double b_height) {
         Button exitBtn = getBtn(b_width, b_height, margin + (b_width + b_height) * 4, height - padding, "退出");
+
         exitBtn.setOnAction(event -> {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("提示");
